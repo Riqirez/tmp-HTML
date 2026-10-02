@@ -1,0 +1,745 @@
+<title>부산 청년 지도 탭</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap">
+<style>
+/* 레이아웃: 왼쪽 시연 패널 + 오른쪽 모바일 화면. 팀 홈 화면과 같은 인디고 + 웜 뉴트럴 톤을 따른다. */
+:root{
+  --font:'Noto Sans KR',system-ui,-apple-system,'Apple SD Gothic Neo','Malgun Gothic',sans-serif;
+  --bg:#f1efea; --panel:#faf9f6; --surface:#ffffff; --ink:#1f2433; --ink-2:#5b6072; --line:#dedbd3;
+  --primary:#4a5590; --primary-ink:#ffffff; --accent:#8a5a2b; --me:#2f6fd0;
+  --land:#ebe8e0; --water:#c6d9e6; --road:#fffdf8; --road-line:#d3cebf; --park:#d3e1ca; --gu-line:#9a96b3;
+  --c-culture:#7a57b8; --c-library:#2f6fb5; --c-public_facility:#2f8a5b; --c-youth_space:#c9702a; --c-sports:#c0485f; --c-etc:#6b7080;
+  --shadow:0 1px 4px rgba(20,24,40,.22); --heart:#d6455d;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#14161d; --panel:#1b1e27; --surface:#222634; --ink:#e8e9ef; --ink-2:#a2a6b8; --line:#31364a;
+    --primary:#8b97dc; --primary-ink:#11131c; --accent:#d9a066; --me:#6aa6ff;
+    --land:#232733; --water:#1b2a38; --road:#2d3242; --road-line:#3b4157; --park:#24352a; --gu-line:#6a6a86;
+    --c-culture:#a98be0; --c-library:#6aa6e6; --c-public_facility:#5cc08e; --c-youth_space:#ee9a5c; --c-sports:#ee7d92; --c-etc:#9aa0b4;
+    --shadow:0 1px 4px rgba(0,0,0,.5); --heart:#ff7a90; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#14161d; --panel:#1b1e27; --surface:#222634; --ink:#e8e9ef; --ink-2:#a2a6b8; --line:#31364a;
+  --primary:#8b97dc; --primary-ink:#11131c; --accent:#d9a066; --me:#6aa6ff;
+  --land:#232733; --water:#1b2a38; --road:#2d3242; --road-line:#3b4157; --park:#24352a; --gu-line:#6a6a86;
+  --c-culture:#a98be0; --c-library:#6aa6e6; --c-public_facility:#5cc08e; --c-youth_space:#ee9a5c; --c-sports:#ee7d92; --c-etc:#9aa0b4;
+  --shadow:0 1px 4px rgba(0,0,0,.5); --heart:#ff7a90; color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--font);padding-inline:16px;padding-block:16px;line-height:1.5}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
+
+.wrap{display:grid;grid-template-columns:300px minmax(0,390px);gap:24px;justify-content:center;align-items:start}
+@media (max-width:760px){.wrap{grid-template-columns:minmax(0,1fr)}}
+
+/* 시연 패널 */
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px;min-width:0}
+.panel h1{font-size:18px;margin:0 0 4px}
+.panel p{margin:0 0 12px;font-size:12.5px;color:var(--ink-2)}
+.panel details>summary{font-size:13px;font-weight:700;cursor:pointer;padding:4px 0}
+.group{margin-top:14px}
+.group h2{font-size:12px;letter-spacing:.04em;color:var(--ink-2);margin:0 0 6px;font-weight:700}
+.jumps{display:grid;gap:6px}
+.jump{text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:13px}
+.jump[aria-pressed="true"]{border-color:var(--primary);background:color-mix(in srgb,var(--primary) 10%,var(--surface));font-weight:700}
+.radios{display:grid;gap:4px;font-size:13px}
+.radios label{display:flex;gap:8px;align-items:center;padding:4px 0}
+.panel .check{display:flex;gap:8px;align-items:center;font-size:13px;padding:2px 0}
+.panel select{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:7px 10px;font-size:13px;width:100%}
+.note{font-size:12px;color:var(--ink-2);margin-top:14px;padding-top:12px;border-top:1px solid var(--line)}
+
+/* 휴대폰 화면 */
+.phone{position:relative;display:flex;flex-direction:column;width:100%;height:min(820px,calc(100dvh - 32px));min-height:640px;background:var(--surface);border:1px solid var(--line);border-radius:30px;overflow:hidden}
+.screen{position:relative;flex:1;min-height:0;overflow:hidden}
+.map{position:absolute;inset:0;background:var(--land);touch-action:none;cursor:grab;overflow:hidden}
+.map:active{cursor:grabbing}
+#basemap{position:absolute;left:0;top:0;transform-origin:0 0;pointer-events:none}
+#basemap .land{fill:var(--land)}
+#basemap .sea{fill:var(--water)}
+#basemap .river{fill:none;stroke:var(--water);stroke-width:26;stroke-linecap:round}
+#basemap .park{fill:var(--park)}
+#basemap path{vector-effect:non-scaling-stroke}
+#basemap .casing{fill:none;stroke:var(--road-line);stroke-width:8;stroke-linecap:round}
+#basemap .roadfill{fill:none;stroke:var(--road);stroke-width:5.5;stroke-linecap:round}
+#basemap .gu{fill:color-mix(in srgb,var(--primary) 6%,transparent);stroke:var(--gu-line);stroke-width:1.5;stroke-dasharray:6 5}
+.maplabel{position:absolute;transform:translate(-50%,-50%);font-size:11px;letter-spacing:.12em;color:var(--ink-2);pointer-events:none;white-space:nowrap;font-weight:500}
+.maplabel.gu{font-size:13px;font-weight:700;color:var(--primary)}
+.credit{position:absolute;left:10px;bottom:8px;font-size:10px;color:var(--ink-2);pointer-events:none;z-index:2}
+.pin{position:absolute;width:26px;height:26px;border-radius:50%;background:var(--c);border:3px solid var(--surface);box-shadow:var(--shadow);padding:0;transform:translate(-50%,-50%)}
+.pin::after{content:"";position:absolute;inset:5px;border-radius:50%;background:var(--surface)}
+.pin .ph{position:absolute;right:-9px;top:-11px;width:16px;height:16px;border-radius:50%;background:var(--surface);color:var(--heart);display:grid;place-items:center;font-size:11px;line-height:1;box-shadow:var(--shadow)}
+.pin[aria-pressed="true"]{transform:translate(-50%,-50%) scale(1.4);z-index:3;box-shadow:0 0 0 5px color-mix(in srgb,var(--c) 30%,transparent),var(--shadow)}
+.cluster{position:absolute;transform:translate(-50%,-50%);border-radius:50%;background:var(--primary);color:var(--primary-ink);font-weight:700;font-size:13px;display:grid;place-items:center;border:3px solid var(--surface);box-shadow:var(--shadow);padding:0}
+.me{position:absolute;width:16px;height:16px;transform:translate(-50%,-50%);border-radius:50%;background:var(--me);border:3px solid var(--surface);box-shadow:var(--shadow);pointer-events:none}
+.me::before{content:"";position:absolute;inset:-12px;border-radius:50%;background:var(--me);opacity:.18;animation:pulse 2.4s ease-out infinite}
+@keyframes pulse{0%{transform:scale(.5);opacity:.3}100%{transform:scale(1.3);opacity:0}}
+@media (prefers-reduced-motion:reduce){.me::before{animation:none}}
+
+.chips{position:absolute;top:0;left:0;right:0;z-index:6;display:flex;gap:8px;padding:12px;overflow-x:auto;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:none;display:inline-flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:7px 13px;font-size:13px;white-space:nowrap;box-shadow:var(--shadow)}
+.chip i{width:8px;height:8px;border-radius:50%;background:var(--c)}
+.chip.saved{color:var(--heart)}
+.chip.saved[aria-pressed="true"]{background:var(--heart);border-color:var(--heart);color:var(--surface)}
+.chip[aria-pressed="true"]{background:var(--primary);border-color:var(--primary);color:var(--primary-ink);font-weight:700}
+#notice{position:absolute;top:58px;left:12px;right:12px;z-index:6;display:grid;gap:8px}
+#toasts{position:absolute;top:58px;left:12px;right:12px;z-index:7;display:grid;gap:8px;pointer-events:none}
+.banner{display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 12px;font-size:13px;box-shadow:var(--shadow)}
+.banner span{flex:1;min-width:0}
+.banner .act{border:1px solid var(--primary);color:var(--primary);background:transparent;border-radius:8px;padding:5px 10px;font-size:12px;font-weight:700;white-space:nowrap}
+.banner .x{border:0;background:none;font-size:18px;line-height:1;color:var(--ink-2);padding:2px 4px}
+.toast{background:var(--ink);color:var(--surface);border-radius:12px;padding:10px 14px;font-size:13px;box-shadow:var(--shadow)}
+
+.sheet{position:absolute;left:0;right:0;bottom:0;z-index:5;display:flex;flex-direction:column;background:var(--surface);border-radius:20px 20px 0 0;box-shadow:0 -4px 16px rgba(20,24,40,.16)}
+.sheet[data-mode="card"]{height:auto!important}
+.ctrl{position:absolute;right:12px;bottom:calc(100% + 12px);display:grid;gap:8px}
+.ctrl button{width:42px;height:42px;border-radius:50%;background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow);display:grid;place-items:center;font-size:20px;line-height:1;padding:0}
+.ctrl svg{width:20px;height:20px}
+.handle{flex:none;height:24px;display:grid;place-items:center;cursor:grab;touch-action:none}
+.handle i{width:40px;height:4px;border-radius:2px;background:var(--line)}
+.sheet-head{flex:none;display:flex;justify-content:space-between;align-items:baseline;padding:0 16px 8px;font-size:15px;font-weight:700}
+.sheet-head small{font-size:12px;font-weight:400;color:var(--ink-2)}
+.list{flex:1;min-height:0;overflow-y:auto;margin:0;padding:0;list-style:none}
+.item{border-top:1px solid var(--line);display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center}
+.item-actions{grid-column:1/-1}
+.heart{flex:none;width:40px;height:40px;border:0;background:none;border-radius:50%;display:grid;place-items:center;color:var(--ink-2);padding:0}
+.heart svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linejoin:round}
+.heart[aria-pressed="true"]{color:var(--heart)}
+.heart[aria-pressed="true"] svg{fill:currentColor}
+.item .heart{margin-right:8px}
+.detail-bar .heart{margin-left:auto}
+.item[data-sel="true"]{background:color-mix(in srgb,var(--primary) 8%,var(--surface))}
+.item-main{display:grid;grid-template-columns:10px minmax(0,1fr) auto;gap:12px;align-items:center;width:100%;text-align:left;background:none;border:0;padding:12px 16px}
+.dot{width:10px;height:10px;border-radius:50%;background:var(--c)}
+.txt{display:grid;min-width:0}
+.txt b{font-size:14.5px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.txt small{font-size:12px;color:var(--ink-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dist{font-size:13px;color:var(--accent);font-weight:700;font-variant-numeric:tabular-nums}
+.item-actions{display:flex;gap:8px;padding:0 16px 12px 38px}
+.empty{padding:20px 16px 28px;display:grid;gap:10px;justify-items:start;font-size:14px}
+.tag{display:inline-block;font-size:11.5px;font-weight:700;color:var(--c);border:1px solid color-mix(in srgb,var(--c) 45%,transparent);border-radius:6px;padding:1px 7px}
+.tag.plain{color:var(--ink-2);border-color:var(--line)}
+.tag.live{color:var(--accent);border-color:color-mix(in srgb,var(--accent) 50%,transparent)}
+.card{padding:0 16px 18px;display:grid;gap:8px}
+.card-top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.card h2{font-size:17px;margin:4px 0 0}
+.card p{margin:0;font-size:13px;color:var(--ink-2)}
+.x{border:0;background:none;font-size:22px;line-height:1;color:var(--ink-2);padding:2px 6px}
+.meta{color:var(--accent)!important;font-weight:700}
+.actions{display:flex;gap:8px;margin-top:4px}
+.btn{display:inline-flex;align-items:center;justify-content:center;border-radius:10px;padding:10px 16px;font-size:14px;font-weight:700;border:1px solid var(--primary);text-decoration:none;min-width:0}
+.btn.primary{background:var(--primary);color:var(--primary-ink)}
+.btn.ghost{background:transparent;color:var(--primary)}
+.btn.small{padding:6px 12px;font-size:12.5px}
+
+.detail{position:absolute;inset:0;z-index:10;display:flex;flex-direction:column;background:var(--surface)}
+.detail[hidden]{display:none}
+.detail-bar{flex:none;display:flex;align-items:center;gap:6px;padding:12px 10px;border-bottom:1px solid var(--line);font-weight:700;font-size:15px}
+.back{border:0;background:none;padding:6px 8px;font-size:22px;line-height:1}
+.detail-body{flex:1;min-height:0;overflow-y:auto;padding:16px 20px 28px}
+.detail-body h2{font-size:21px;margin:8px 0 4px;text-wrap:balance}
+.detail-sub{display:flex;gap:8px;flex-wrap:wrap;align-items:center;font-size:13px;color:var(--ink-2)}
+.rows{margin:14px 0 0;padding:0}
+.row{display:grid;grid-template-columns:78px minmax(0,1fr);gap:12px;padding:12px 0;border-top:1px solid var(--line);font-size:14px}
+.row dt{color:var(--ink-2)}
+.row dd{margin:0;overflow-wrap:anywhere}
+.row a{color:var(--primary)}
+.cta{display:flex;gap:8px;flex-wrap:wrap;margin:16px 0 4px}
+.sec{font-size:14px;font-weight:700;margin:22px 0 8px}
+.events{margin:0;padding:0;list-style:none;display:grid;gap:8px}
+.events li{border:1px solid var(--line);border-radius:12px;padding:10px 12px;display:grid;gap:4px;font-size:13.5px}
+.events b{font-size:14px}
+.events .show{color:var(--ink-2);font-size:12.5px}
+.events a{color:var(--primary);font-size:12.5px}
+.events .when{color:var(--ink-2);font-variant-numeric:tabular-nums}
+.muted{color:var(--ink-2);font-size:13px}
+.stamp{margin-top:20px;font-size:12px;color:var(--ink-2);border-top:1px solid var(--line);padding-top:12px}
+
+.tabbar{flex:none;height:60px;display:grid;grid-template-columns:repeat(5,1fr);border-top:1px solid var(--line);background:var(--surface)}
+.tabbar button{display:grid;justify-items:center;align-content:center;gap:2px;background:none;border:0;font-size:11px;color:var(--ink-2);padding:0}
+.tabbar svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.tabbar button[aria-current="page"]{color:var(--primary);font-weight:700}
+</style>
+
+<div class="wrap">
+  <aside class="panel" aria-label="시연 패널">
+    <h1>부산 청년 지도 탭</h1>
+    <p>시연용 프로토타입입니다. 장소는 샘플이고, 을숙도문화회관과 홍티아트센터 2곳만 실제 places 행입니다.</p>
+    <details id="panelDetails" open>
+      <summary>화면 바로가기</summary>
+      <div class="group"><div class="jumps" id="jumps"></div></div>
+      <div class="group">
+        <h2>위치 상태</h2>
+        <div class="radios" id="locRadios"></div>
+      </div>
+      <div class="group">
+        <h2>마이 탭 연동 (시연용)</h2>
+        <label class="check"><input type="checkbox" id="loggedIn" checked> 로그인됨 (사용자 번호 user_id 있음)</label>
+      </div>
+      <div class="group">
+        <h2>거주 구 (마이 탭 값)</h2>
+        <select id="residence" aria-label="거주 구">
+          <option>사하구</option>
+          <option>부산진구</option>
+        </select>
+      </div>
+    </details>
+    <div class="note">
+      지도는 개념도이고, 앱에서는 카카오맵 JS SDK(WebView)로 바뀝니다. 행사 진행 중·예정 판정은 시연 기준일 2026-10-02로 계산합니다. 찜은 시연용으로 이 화면 안에서만 저장되고, 새로고침하면 사라집니다. 지도는 끌어서 이동하고, 마우스 휠이나 +/− 버튼으로 확대합니다.
+    </div>
+  </aside>
+
+  <main class="phone" aria-label="지도 탭 화면">
+    <div class="screen" id="screen">
+      <div class="map" id="map">
+        <svg id="basemap" width="1000" height="800" viewBox="0 0 1000 800" aria-hidden="true">
+          <defs>
+            <path id="r1" d="M0 520 C200 500 400 520 600 470 S900 330 1000 300"/>
+            <path id="r2" d="M500 800 C520 600 600 400 700 200 S760 20 780 -10"/>
+            <path id="r3" d="M240 470 C380 430 520 380 700 330 S880 400 1000 420"/>
+            <path id="r4" d="M120 200 C300 220 520 240 700 250 S900 200 1000 150"/>
+          </defs>
+          <rect class="land" width="1000" height="800"/>
+          <path class="sea" d="M0 590 L180 650 L330 720 L450 800 L0 800 Z"/>
+          <path class="river" d="M-20 250 C80 300 130 400 170 520 C185 560 180 585 160 620"/>
+          <ellipse class="park" cx="735" cy="300" rx="48" ry="34"/>
+          <ellipse class="park" cx="330" cy="505" rx="40" ry="28"/>
+          <ellipse class="gu" cx="360" cy="555" rx="210" ry="120"/>
+          <ellipse class="gu" cx="760" cy="240" rx="120" ry="95"/>
+          <use href="#r1" class="casing"/><use href="#r2" class="casing"/><use href="#r3" class="casing"/><use href="#r4" class="casing"/>
+          <use href="#r1" class="roadfill"/><use href="#r2" class="roadfill"/><use href="#r3" class="roadfill"/><use href="#r4" class="roadfill"/>
+        </svg>
+        <div id="labels"></div>
+        <div id="pins"></div>
+        <div class="credit">개념 지도 · 카카오맵 SDK로 교체 예정</div>
+      </div>
+
+      <div class="chips" id="chips" role="group" aria-label="카테고리 필터"></div>
+      <div id="notice" aria-live="polite"></div>
+      <div id="toasts" aria-live="polite"></div>
+
+      <section class="sheet" id="sheet" data-mode="list" aria-label="장소 목록">
+        <div class="ctrl">
+          <button type="button" id="zin" aria-label="확대">+</button>
+          <button type="button" id="zout" aria-label="축소">−</button>
+          <button type="button" id="locate" aria-label="내 위치">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>
+          </button>
+        </div>
+        <div class="handle" id="handle" role="button" tabindex="0" aria-label="목록 높이 조절"><i></i></div>
+        <div id="sheetBody" style="display:flex;flex-direction:column;flex:1;min-height:0"></div>
+      </section>
+
+      <section class="detail" id="detail" hidden aria-label="장소 상세"></section>
+    </div>
+
+    <nav class="tabbar" aria-label="하단 탭">
+      <button type="button" data-tab="홈"><svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8v10H3z"/></svg>홈</button>
+      <button type="button" data-tab="AI 검색"><svg viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/></svg>AI 검색</button>
+      <button type="button" data-tab="지도" aria-current="page"><svg viewBox="0 0 24 24"><path d="M12 21s7-6.2 7-11a7 7 0 10-14 0c0 4.8 7 11 7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>지도</button>
+      <button type="button" data-tab="마감"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>마감</button>
+      <button type="button" data-tab="내 정보"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>내 정보</button>
+    </nav>
+  </main>
+</div>
+
+<script>
+(function(){
+'use strict';
+var TODAY='2026-10-02';
+var CATS=[
+  {code:'culture',label:'문화시설'},
+  {code:'library',label:'도서관'},
+  {code:'sports',label:'체육시설'},
+  {code:'public_facility',label:'공공시설'},
+  {code:'youth_space',label:'청년공간'}
+];
+var W=1000,H=800,LNG0=128.90,LNGSPAN=0.20,LAT0=35.20,LATSPAN=0.13;
+var MINS=0.45,MAXS=8;
+function toWorld(lat,lng){return {x:(lng-LNG0)/LNGSPAN*W,y:(LAT0-lat)/LATSPAN*H};}
+function catOf(code){for(var i=0;i<CATS.length;i++){if(CATS[i].code===code)return CATS[i];}return {code:'etc',label:'기타'};}
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+function $(s){return document.querySelector(s);}
+
+/* v_map_places 형태의 샘플. 실제 행은 CUL-FC000178 하나뿐이고 나머지는 시연용입니다. */
+function P(id,name,type,cat,gu,addr,lat,lng,o){
+  var p={place_id:id,name:name,place_type:type,category_code:cat,sigungu:gu,addr:addr,addr_road:'',lat:lat,lng:lng,
+    tel:'',homepage:'',open_hours_raw:'',closed_days_raw:'',fee_raw:'',is_free:'',reservation_url:'',capacity:'',
+    collected_at:'2026-09-30',sample:true};
+  for(var k in o){p[k]=o[k];}
+  return p;
+}
+var places=[
+  P('CUL-FC000178','을숙도문화회관','공연장','culture','사하구','부산광역시 사하구 낙동남로1233번길 25 (하단동)',35.1099098,128.944852,{
+    tel:'051-220-5804',homepage:'http://www.saha.go.kr/eulsukdo/contents.do?mId=0103000000',
+    reservation_url:'https://www.saha.go.kr/eulsukdo/contents.do?mId=0303000000',capacity:950,sample:false}),
+  P('CUL-BCP00105','홍티아트센터','전시공간','culture','사하구','부산광역시 사하구 다산로 106번길 6',35.061554,128.958899,{
+    tel:'051-263-8661',homepage:'https://www.instagram.com/hongtiartcenter/',capacity:100,sample:false}),
+  P('SAMPLE-02','샘플 전시공간(하단)','전시공간','culture','사하구','부산광역시 사하구 샘플로 12',35.1065,128.9660,{
+    tel:'051-000-0001',homepage:'https://example.com',open_hours_raw:'화~일 10:00-18:00',closed_days_raw:'매주 월요일',fee_raw:'무료',is_free:1}),
+  P('SAMPLE-03','샘플 소극장(사하)','공연장','culture','사하구','부산광역시 사하구 샘플로 34',35.1010,128.9770,{
+    tel:'051-000-0002',fee_raw:'일반 15,000원',reservation_url:'https://example.com/book',capacity:120}),
+  P('SAMPLE-04','샘플 갤러리(부산진)','전시공간','culture','부산진구','부산광역시 부산진구 샘플로 7',35.1610,129.0480,{
+    homepage:'https://example.com',open_hours_raw:'10:00-19:00',is_free:1}),
+  P('SAMPLE-05','샘플 공연장(서면)','공연장','culture','부산진구','부산광역시 부산진구 샘플로 21',35.1585,129.0590,{
+    tel:'051-000-0005',fee_raw:'4,000원부터',capacity:400,reservation_url:'https://example.com/book'}),
+  P('SAMPLE-06','샘플 문화센터','문화센터','culture','부산진구','부산광역시 부산진구 샘플로 3',35.1650,129.0420,{
+    homepage:'https://example.com'}),
+  P('SAMPLE-07','사하 샘플도서관','공공도서관','library','사하구','부산광역시 사하구 샘플로 55',35.1150,128.9720,{
+    tel:'051-000-0007',homepage:'https://example.com',open_hours_raw:'평일 09:00-22:00 / 주말 09:00-18:00',
+    closed_days_raw:'매월 둘째·넷째 월요일',fee_raw:'무료',is_free:1,capacity:300}),
+  P('SAMPLE-08','부산진 샘플도서관','공공도서관','library','부산진구','부산광역시 부산진구 샘플로 40',35.1555,129.0510,{
+    open_hours_raw:'평일 09:00-21:00',is_free:1}),
+  P('SAMPLE-09','샘플 작은도서관','작은도서관','library','부산진구','부산광역시 부산진구 샘플로 88',35.1700,129.0620,{
+    tel:'051-000-0009'}),
+  P('SAMPLE-10','샘플 공공체육관','체육시설','sports','사하구','부산광역시 사하구 샘플로 70',35.1090,128.9900,{
+    open_hours_raw:'06:00-22:00',fee_raw:'시간당 5,000원',reservation_url:'https://example.com/book'}),
+  P('SAMPLE-11','샘플 시민강당','강당','public_facility','부산진구','부산광역시 부산진구 샘플로 15',35.1620,129.0680,{
+    tel:'051-000-0011',capacity:200}),
+  P('SAMPLE-12','샘플 청년공간(사하)','청년공간','youth_space','사하구','부산광역시 사하구 샘플로 90',35.1120,128.9810,{
+    homepage:'https://example.com',open_hours_raw:'평일 10:00-21:00',is_free:1}),
+  P('SAMPLE-13','샘플 청년공간(부산진)','청년공간','youth_space','부산진구','부산광역시 부산진구 샘플로 26',35.1590,129.0500,{
+    tel:'051-000-0013',open_hours_raw:'평일 10:00-20:00',is_free:1}),
+  P('SAMPLE-14','샘플 청년공간 B','청년공간','youth_space','부산진구','부산광역시 부산진구 샘플로 61',35.1675,129.0550,{
+    tel:'051-000-0014'})
+];
+var EVENTS={
+  'CUL-BCP00105':[
+    {title:'2026년 홍티아트센터 입주작가 ∑Mmm(이음)전 - Serendipity: 우연이 의미가 되는 순간',st:'2026-04-29',ed:'2026-11-25',pay:'N',price:'무료관람',
+     show:'월 - 토 10:00 - 18:00',url:'http://busandabom.net/play/view.nm?lang=ko&url=play&menuCd=8&res_no=2026050191',real:true},
+    {title:'오셔닉 그래머 Oceanic Grammar',st:'2026-09-16',ed:'2026-10-07',pay:'N',price:'무료관람',
+     show:'월~토 10:00~18:00 (17:30 입장마감 | 10/3(토) 제외한 일요일, 공휴일 휴관)',url:'http://busandabom.net/play/view.nm?lang=ko&url=play&menuCd=8&res_no=2026090137',real:true}],
+  'CUL-FC000178':[
+    {title:'샘플 클래식 공연',st:'2026-10-10',ed:'2026-10-11',pay:'Y',price:'샘플 15,000원',show:'19:30',url:'https://example.com/event'},
+    {title:'샘플 전시(종료됨)',st:'2026-09-01',ed:'2026-09-20',pay:'N'}],
+  'SAMPLE-02':[{title:'샘플 사진전',st:'2026-09-25',ed:'2026-10-20',pay:'N'}],
+  'SAMPLE-03':[{title:'샘플 연극',st:'2026-10-15',ed:'2026-10-30',pay:'Y'}],
+  'SAMPLE-04':[
+    {title:'샘플 기획전',st:'2026-10-05',ed:'2026-11-02',pay:'N'},
+    {title:'샘플 아티스트 토크',st:'2026-10-12',ed:'2026-10-12',pay:'N'}],
+  'SAMPLE-05':[{title:'샘플 뮤지컬',st:'2026-10-03',ed:'2026-10-25',pay:'Y'}]
+};
+var byId={};
+places.forEach(function(p){var w=toWorld(p.lat,p.lng);p.wx=w.x;p.wy=w.y;byId[p.place_id]=p;});
+var lats=places.map(function(p){return p.lat;}),lngs=places.map(function(p){return p.lng;});
+var AREA={minLat:Math.min.apply(null,lats)-0.02,maxLat:Math.max.apply(null,lats)+0.02,
+          minLng:Math.min.apply(null,lngs)-0.02,maxLng:Math.max.apply(null,lngs)+0.02};
+var USERS={'ok-saha':{lat:35.1085,lng:128.9760},'ok-busanjin':{lat:35.1580,lng:129.0520},'outside':{lat:35.2300,lng:129.0900}};
+var RES={'사하구':{lat:35.1055,lng:128.9740},'부산진구':{lat:35.1620,lng:129.0540}};
+var LOCS=[
+  {id:'ok-saha',label:'허용 · 사하구 안'},
+  {id:'ok-busanjin',label:'허용 · 부산진구 안'},
+  {id:'denied',label:'권한 거부'},
+  {id:'failed',label:'GPS 실패'},
+  {id:'outside',label:'서비스 지역 밖'}
+];
+var SNAPS=[96,300,470];
+
+var state={cat:'all',residence:'사하구',loc:'ok-saha',cx:370,cy:580,s:1.8,selected:null,mode:'list',detailId:null,
+  sheetH:SNAPS[1],emptySim:false,noticeDismissed:false,scene:'s1',saved:{},savedOnly:false,loggedIn:true,failSim:false};
+
+/* 거리·정렬 */
+function userPos(){return (state.loc==='ok-saha'||state.loc==='ok-busanjin')?USERS[state.loc]:null;}
+function haversine(a,b){
+  var R=6371000,r=Math.PI/180,dLat=(b.lat-a.lat)*r,dLng=(b.lng-a.lng)*r;
+  var x=Math.sin(dLat/2)*Math.sin(dLat/2)+Math.cos(a.lat*r)*Math.cos(b.lat*r)*Math.sin(dLng/2)*Math.sin(dLng/2);
+  return 2*R*Math.asin(Math.sqrt(x));
+}
+function fmtDist(m){return m<1000?(Math.round(m/10)*10)+'m':(m/1000).toFixed(1)+'km';}
+function distOf(p){var u=userPos();return u?haversine(u,p):null;}
+function visiblePlaces(){
+  if(state.emptySim||state.failSim)return [];
+  return places.filter(function(p){
+    return (state.cat==='all'||p.category_code===state.cat)&&(!state.savedOnly||state.saved[p.place_id]);
+  });
+}
+function sortedList(){
+  var list=visiblePlaces().map(function(p){return {p:p,d:distOf(p)};});
+  if(userPos()){list.sort(function(a,b){return a.d-b.d;});}
+  else{list.sort(function(a,b){return a.p.name.localeCompare(b.p.name,'ko');});}
+  return list;
+}
+function liveEvents(id){
+  return (EVENTS[id]||[]).filter(function(e){return e.ed>=TODAY;}).sort(function(a,b){return a.st<b.st?-1:1;});
+}
+function kakaoLink(p){return 'https://map.kakao.com/link/to/'+encodeURIComponent(p.name)+','+p.lat+','+p.lng;}
+function savedCount(){return Object.keys(state.saved).length;}
+var HEART_SVG='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20.5s-7.5-4.6-9.2-9.3C1.6 7.8 3.6 4.8 6.7 4.8c2 0 3.7 1.2 5.3 3.3 1.6-2.1 3.3-3.3 5.3-3.3 3.1 0 5.1 3 3.9 6.4-1.7 4.7-9.2 9.3-9.2 9.3z"/></svg>';
+function heartBtn(p){
+  var on=!!state.saved[p.place_id];
+  return '<button type="button" class="heart" data-heart="'+esc(p.place_id)+'" aria-pressed="'+on+'" aria-label="'+esc(p.name)+(on?' 찜 해제':' 찜하기')+'">'+HEART_SVG+'</button>';
+}
+function md(s){return s.slice(5).replace('-','.');}
+
+/* 지도 */
+var map=$('#map'),basemap=$('#basemap'),pinsEl=$('#pins'),labelsEl=$('#labels');
+function clamp(v,a,b){return Math.max(a,Math.min(b,v));}
+function centerOn(wx,wy,s,offY){
+  if(s)state.s=clamp(s,MINS,MAXS);
+  state.cx=clamp(wx,0,W);state.cy=clamp(wy+(offY||0)/state.s,0,H);
+}
+function resetView(){
+  var u=userPos();
+  if(u){var w=toWorld(u.lat,u.lng);centerOn(w.x,w.y,2.2,60);}
+  else{var c=RES[state.residence],w2=toWorld(c.lat,c.lng);centerOn(w2.x,w2.y,1.8,60);}
+}
+function project(wx,wy,mw,mh){return {x:(wx-state.cx)*state.s+mw/2,y:(wy-state.cy)*state.s+mh/2};}
+var LABELS=[{t:'사하구',x:330,y:445,c:'gu'},{t:'부산진구',x:760,y:128,c:'gu'},{t:'낙동강',x:60,y:310,c:''},{t:'남해',x:190,y:730,c:''}];
+function renderMap(){
+  var mw=map.clientWidth,mh=map.clientHeight;
+  basemap.style.transform='translate('+(mw/2-state.cx*state.s)+'px,'+(mh/2-state.cy*state.s)+'px) scale('+state.s+')';
+  var lh='';
+  LABELS.forEach(function(l){
+    var q=project(l.x,l.y,mw,mh);
+    if(q.x<-40||q.y<-20||q.x>mw+40||q.y>mh+20)return;
+    lh+='<div class="maplabel '+l.c+'" style="left:'+q.x+'px;top:'+q.y+'px">'+esc(l.t)+'</div>';
+  });
+  labelsEl.innerHTML=lh;
+
+  var items=[],sel=null;
+  visiblePlaces().forEach(function(p){
+    var q=project(p.wx,p.wy,mw,mh);
+    if(q.x<-30||q.y<-30||q.x>mw+30||q.y>mh+30)return;
+    var it={p:p,sx:q.x,sy:q.y};
+    if(p.place_id===state.selected)sel=it;else items.push(it);
+  });
+  var used=items.map(function(){return false;}),groups=[];
+  for(var i=0;i<items.length;i++){
+    if(used[i])continue;
+    var g=[items[i]];used[i]=true;
+    for(var j=i+1;j<items.length;j++){
+      if(used[j])continue;
+      if(Math.hypot(items[i].sx-items[j].sx,items[i].sy-items[j].sy)<46){g.push(items[j]);used[j]=true;}
+    }
+    groups.push(g);
+  }
+  var h='';
+  groups.forEach(function(g,gi){
+    if(g.length===1){
+      var it=g[0];
+      h+='<button type="button" class="pin" data-id="'+esc(it.p.place_id)+'" aria-pressed="false" aria-label="'+esc(it.p.name)+(state.saved[it.p.place_id]?' (찜함)':'')+'" style="left:'+it.sx+'px;top:'+it.sy+'px;--c:var(--c-'+esc(it.p.category_code)+')">'+(state.saved[it.p.place_id]?'<b class="ph" aria-hidden="true">♥</b>':'')+'</button>';
+    }else{
+      var cx=0,cy=0,wx=0,wy=0;
+      g.forEach(function(it){cx+=it.sx;cy+=it.sy;wx+=it.p.wx;wy+=it.p.wy;});
+      var n=g.length,size=34+Math.min(n,9)*2;
+      h+='<button type="button" class="cluster" data-cl="'+(wx/n)+','+(wy/n)+'" aria-label="장소 '+n+'곳 묶음, 누르면 확대" style="left:'+(cx/n)+'px;top:'+(cy/n)+'px;width:'+size+'px;height:'+size+'px">'+n+'</button>';
+    }
+  });
+  if(sel){
+    h+='<button type="button" class="pin" data-id="'+esc(sel.p.place_id)+'" aria-pressed="true" aria-label="'+esc(sel.p.name)+(state.saved[sel.p.place_id]?' (찜함)':'')+'" style="left:'+sel.sx+'px;top:'+sel.sy+'px;--c:var(--c-'+esc(sel.p.category_code)+')">'+(state.saved[sel.p.place_id]?'<b class="ph" aria-hidden="true">♥</b>':'')+'</button>';
+  }
+  var u=userPos();
+  if(u){
+    var uw=toWorld(u.lat,u.lng),uq=project(uw.x,uw.y,mw,mh);
+    h+='<div class="me" style="left:'+uq.x+'px;top:'+uq.y+'px"></div>';
+  }
+  pinsEl.innerHTML=h;
+}
+
+/* 칩 */
+var chipsEl=$('#chips');
+function buildChips(){
+  var h='<button type="button" class="chip" data-cat="all" aria-pressed="true">전체</button>';
+  CATS.forEach(function(c){
+    var n=places.filter(function(p){return p.category_code===c.code;}).length;
+    if(n===0)return;
+    h+='<button type="button" class="chip" data-cat="'+c.code+'" aria-pressed="false"><i style="--c:var(--c-'+c.code+')"></i>'+esc(c.label)+'</button>';
+  });
+  h+='<button type="button" class="chip saved" data-saved="1" aria-pressed="false"></button>';
+  chipsEl.innerHTML=h;
+}
+function renderChips(){
+  chipsEl.querySelectorAll('.chip[data-cat]').forEach(function(b){b.setAttribute('aria-pressed',String(b.dataset.cat===state.cat));});
+  var sc=chipsEl.querySelector('.chip.saved');
+  if(sc){sc.setAttribute('aria-pressed',String(state.savedOnly));sc.textContent='♥ 찜 '+savedCount();}
+}
+
+/* 하단 시트 */
+var sheet=$('#sheet'),sheetBody=$('#sheetBody');
+function maxSheet(){return Math.min(SNAPS[2],Math.round($('#screen').clientHeight*0.7));}
+function applySheet(){
+  sheet.dataset.mode=state.mode;
+  sheet.style.height=state.mode==='card'?'auto':clamp(state.sheetH,SNAPS[0],maxSheet())+'px';
+}
+function itemHTML(o){
+  var p=o.p,sel=p.place_id===state.selected,cat=catOf(p.category_code),ev=liveEvents(p.place_id).length;
+  var sub=cat.label+(p.addr?' · '+p.addr:'')+(ev?' · 행사 '+ev:'');
+  var h='<li class="item" data-sel="'+sel+'"><button type="button" class="item-main" data-id="'+esc(p.place_id)+'">'+
+    '<i class="dot" style="--c:var(--c-'+esc(p.category_code)+')"></i>'+
+    '<span class="txt"><b>'+esc(p.name)+'</b><small>'+esc(sub)+'</small></span>'+
+    '<span class="dist">'+(o.d!=null?fmtDist(o.d):'')+'</span></button>'+heartBtn(p);
+  if(sel){
+    h+='<div class="item-actions"><button type="button" class="btn primary small" data-act="detail">상세보기</button>'+
+       '<a class="btn ghost small" href="'+esc(kakaoLink(p))+'" target="_blank" rel="noopener">길찾기</a></div>';
+  }
+  return h+'</li>';
+}
+function cardHTML(p){
+  var cat=catOf(p.category_code),d=distOf(p),ev=liveEvents(p.place_id).length;
+  var meta=[];if(d!=null)meta.push(fmtDist(d));if(ev)meta.push('행사 '+ev+'건');
+  return '<div class="card"><div class="card-top"><div><span class="tag" style="--c:var(--c-'+esc(p.category_code)+')">'+esc(cat.label)+'</span>'+
+    '<h2>'+esc(p.name)+'</h2></div><div style="display:flex;align-items:center">'+heartBtn(p)+'<button type="button" class="x" data-act="close" aria-label="닫기">×</button></div></div>'+
+    (p.addr?'<p>'+esc(p.addr)+'</p>':'')+
+    (meta.length?'<p class="meta">'+esc(meta.join(' · '))+'</p>':'')+
+    '<div class="actions"><button type="button" class="btn primary" data-act="detail">상세보기</button>'+
+    '<a class="btn ghost" href="'+esc(kakaoLink(p))+'" target="_blank" rel="noopener">길찾기</a></div></div>';
+}
+function renderSheet(){
+  if(state.mode==='card'&&state.selected&&byId[state.selected]){
+    sheetBody.innerHTML=cardHTML(byId[state.selected]);
+  }else{
+    state.mode='list';
+    var list=sortedList(),n=list.length,geo=!!userPos();
+    var h='<div class="sheet-head"><span>'+(state.savedOnly?'찜한 장소 ':(geo?'주변 장소 ':'장소 '))+n+'곳</span><small>'+(geo?'거리순':'이름순')+'</small></div>';
+    if(state.failSim){
+      h+='<div class="empty"><span>장소를 불러오지 못했어요</span><button type="button" class="btn ghost small" data-act="reload">다시 시도</button></div>';
+    }else if(n===0&&state.savedOnly&&!state.emptySim){
+      h+='<div class="empty"><span>'+(savedCount()?'조건에 맞는 찜한 장소가 없어요':'찜한 장소가 없어요. 장소의 하트를 눌러 담아 보세요')+'</span><button type="button" class="btn ghost small" data-act="resetfilter">전체 보기</button></div>';
+    }else if(n===0){
+      h+='<div class="empty"><span>조건에 맞는 장소가 없어요</span><button type="button" class="btn ghost small" data-act="resetfilter">필터 초기화</button></div>';
+    }else{
+      h+='<ul class="list" id="list">'+list.map(itemHTML).join('')+'</ul>';
+    }
+    sheetBody.innerHTML=h;
+  }
+  applySheet();
+}
+
+/* 상세 */
+var detailEl=$('#detail');
+function row(k,v){return v?'<div class="row"><dt>'+esc(k)+'</dt><dd>'+v+'</dd></div>':'';}
+function renderDetail(){
+  var p=state.detailId?byId[state.detailId]:null;
+  if(!p){detailEl.hidden=true;detailEl.innerHTML='';return;}
+  var cat=catOf(p.category_code),d=distOf(p),evs=liveEvents(p.place_id);
+  var feeText=p.fee_raw?esc(p.fee_raw):(String(p.is_free)==='1'?'무료':'');
+  var rows='';
+  rows+=row('주소',p.addr?esc(p.addr_road||p.addr):'');
+  rows+=row('전화',p.tel?'<a href="tel:'+esc(p.tel)+'">'+esc(p.tel)+'</a>':'');
+  rows+=row('홈페이지',p.homepage?'<a href="'+esc(p.homepage)+'" target="_blank" rel="noopener">공식 홈페이지 열기</a>':'');
+  rows+=row('운영시간',esc(p.open_hours_raw));
+  rows+=row('휴관일',esc(p.closed_days_raw));
+  rows+=row('요금',feeText);
+  rows+=row('정원',p.capacity?esc(p.capacity)+'명':'');
+  var noContact=!p.tel&&!p.homepage;
+  var h='<div class="detail-bar"><button type="button" class="back" data-act="back" aria-label="뒤로">‹</button>장소 상세'+heartBtn(p)+'</div><div class="detail-body">'+
+    '<div class="detail-sub"><span class="tag" style="--c:var(--c-'+esc(p.category_code)+')">'+esc(cat.label)+'</span>'+
+    (p.place_type?'<span>'+esc(p.place_type)+'</span>':'')+(d!=null?'<span class="dist">'+fmtDist(d)+'</span>':'')+
+    (p.sample?'<span class="tag plain">샘플 데이터</span>':'')+'</div>'+
+    '<h2>'+esc(p.name)+'</h2>'+
+    '<div class="cta"><a class="btn primary" href="'+esc(kakaoLink(p))+'" target="_blank" rel="noopener">길찾기</a>'+
+    (p.reservation_url?'<a class="btn ghost" href="'+esc(p.reservation_url)+'" target="_blank" rel="noopener">예약하기</a>':'')+'</div>'+
+    '<dl class="rows">'+rows+'</dl>'+
+    (noContact?'<p class="muted" style="margin:10px 0 0">문의처 정보가 없어요</p>':'')+
+    '<div class="sec">진행 중·예정 행사</div>';
+  if(evs.length){
+    h+='<ul class="events">'+evs.map(function(e){
+      var live=e.st<=TODAY;
+      return '<li><b>'+esc(e.title)+'</b><span class="when">'+md(e.st)+(e.st!==e.ed?' – '+md(e.ed):'')+'</span><span>'+
+        '<span class="tag '+(live?'live':'plain')+'">'+(live?'진행 중':'예정')+'</span> '+
+        '<span class="tag plain">'+(e.pay==='Y'?'유료'+(e.price?' · '+esc(e.price):''):'무료')+'</span></span>'+
+        (e.show?'<span class="show">'+esc(e.show)+'</span>':'')+
+        (e.url?'<a href="'+esc(e.url)+'" target="_blank" rel="noopener">공식 상세 안내</a>':'')+'</li>';
+    }).join('')+'</ul>'+(evs.some(function(e){return !e.real;})?'<p class="muted" style="margin:8px 0 0">샘플 행사가 포함돼 있습니다.</p>':'');
+  }else{
+    h+='<p class="muted" style="margin:0">진행 중이거나 예정된 행사가 없어요</p>';
+  }
+  h+='<div class="stamp">데이터 기준일 '+esc(p.collected_at)+'</div></div>';
+  detailEl.innerHTML=h;
+  detailEl.hidden=false;
+  var b=detailEl.querySelector('.detail-body');if(b)b.scrollTop=0;
+}
+
+/* 알림 */
+var noticeEl=$('#notice'),toastsEl=$('#toasts');
+function toast(msg,ms){
+  var t=document.createElement('div');t.className='toast';t.textContent=msg;toastsEl.appendChild(t);
+  setTimeout(function(){if(t.parentNode)t.parentNode.removeChild(t);},ms||3500);
+}
+function showNotice(){
+  noticeEl.innerHTML='';
+  var msg='',act='',key='';
+  if(state.loc==='denied'&&!state.noticeDismissed){msg='위치 권한이 꺼져 있어요. 켜면 가까운 순으로 볼 수 있어요';act='설정 열기';key='settings';}
+  else if(state.loc==='failed'&&!state.noticeDismissed){msg='현재 위치를 가져오지 못했어요';act='다시 시도';key='retry';}
+  if(msg){
+    noticeEl.innerHTML='<div class="banner"><span>'+esc(msg)+'</span><button type="button" class="act" data-act="'+key+'">'+esc(act)+'</button><button type="button" class="x" data-act="dismiss" aria-label="닫기">×</button></div>';
+  }
+  if(state.loc==='outside')toast('서비스 지역(사하구·부산진구) 밖이에요',5000);
+}
+
+/* 위치 상태 */
+function renderLocRadios(){
+  $('#locRadios').innerHTML=LOCS.map(function(l){
+    return '<label><input type="radio" name="loc" value="'+l.id+'"'+(state.loc===l.id?' checked':'')+'> '+esc(l.label)+'</label>';
+  }).join('');
+}
+function setLoc(id){
+  state.loc=id;state.noticeDismissed=false;toastsEl.innerHTML='';
+  resetView();renderLocRadios();showNotice();
+}
+
+/* 장면 */
+function base(){state.detailId=null;state.selected=null;state.mode='list';state.cat='all';state.emptySim=false;state.failSim=false;state.savedOnly=false;state.saved={};state.loggedIn=true;state.sheetH=SNAPS[1];}
+var SCENES=[
+  {id:'s1',label:'S1 지도 메인 (목록)',run:function(){base();setLoc('ok-saha');}},
+  {id:'s2',label:'S2 장소 카드',run:function(){base();setLoc('ok-saha');var p=byId['SAMPLE-13'];state.selected=p.place_id;state.mode='card';centerOn(p.wx,p.wy,2.6,90);}},
+  {id:'s3a',label:'S3 상세 · 값이 많은 장소',run:function(){base();setLoc('ok-saha');var p=byId['SAMPLE-07'];state.selected=p.place_id;state.mode='card';state.detailId=p.place_id;centerOn(p.wx,p.wy,2.6,90);}},
+  {id:'s3b',label:'S3 상세 · 값이 적은 장소 (실제 행)',run:function(){base();setLoc('ok-saha');var p=byId['CUL-FC000178'];state.selected=p.place_id;state.mode='card';state.detailId=p.place_id;centerOn(p.wx,p.wy,2.6,90);}},
+  {id:'s4',label:'S4 클러스터 확대',run:function(){base();setLoc('ok-busanjin');centerOn(770,235,1.0,0);}},
+  {id:'s5a',label:'S5 위치 권한 거부',run:function(){base();setLoc('denied');}},
+  {id:'s5b',label:'S5 GPS 실패',run:function(){base();setLoc('failed');}},
+  {id:'s5c',label:'S5 서비스 지역 밖',run:function(){base();setLoc('outside');}},
+  {id:'s5d',label:'S5 필터 결과 0건',run:function(){base();setLoc('ok-saha');state.emptySim=true;}},
+  {id:'s5e',label:'S5 장소 조회 실패',run:function(){base();setLoc('ok-saha');state.failSim=true;}},
+  {id:'s6a',label:'S6 찜 · 목록·카드·상세에서 담기 (P2)',run:function(){base();setLoc('ok-saha');var p=byId['SAMPLE-12'];state.saved={'SAMPLE-12':1,'CUL-FC000178':1};state.selected=p.place_id;state.mode='card';centerOn(p.wx,p.wy,2.4,90);}},
+  {id:'s6b',label:'S6 찜한 장소만 보기 (P2)',run:function(){base();setLoc('ok-saha');state.saved={'SAMPLE-12':1,'CUL-FC000178':1,'SAMPLE-07':1};state.savedOnly=true;}},
+  {id:'s6c',label:'S6 찜 · 로그인 필요 (P2)',run:function(){base();setLoc('ok-saha');state.loggedIn=false;var p=byId['SAMPLE-13'];state.selected=p.place_id;state.mode='card';centerOn(p.wx,p.wy,2.6,90);}}
+];
+function buildJumps(){
+  $('#jumps').innerHTML=SCENES.map(function(s){
+    return '<button type="button" class="jump" data-scene="'+s.id+'" aria-pressed="'+(state.scene===s.id)+'">'+esc(s.label)+'</button>';
+  }).join('');
+}
+function runScene(id){
+  for(var i=0;i<SCENES.length;i++){if(SCENES[i].id===id){state.scene=id;SCENES[i].run();}}
+  buildJumps();render();
+}
+
+function render(){$('#loggedIn').checked=state.loggedIn;renderMap();renderChips();renderSheet();renderDetail();}
+
+/* 이벤트 */
+$('#jumps').addEventListener('click',function(e){var b=e.target.closest('[data-scene]');if(b)runScene(b.dataset.scene);});
+$('#locRadios').addEventListener('change',function(e){if(e.target.name==='loc'){state.scene='';setLoc(e.target.value);buildJumps();render();}});
+$('#residence').addEventListener('change',function(e){state.residence=e.target.value;if(!userPos()){resetView();}render();});
+function toggleHeart(id){
+  if(!state.loggedIn){toast('찜은 로그인 후 사용할 수 있어요. 내 정보 탭에서 로그인해 주세요');return;}
+  if(state.saved[id]){delete state.saved[id];toast('찜을 해제했어요',2000);}
+  else{state.saved[id]=1;toast('찜했어요',2000);}
+  render();
+}
+chipsEl.addEventListener('click',function(e){
+  var b=e.target.closest('.chip');if(!b)return;
+  if(b.dataset.saved){
+    if(!state.loggedIn){toast('찜은 로그인 후 사용할 수 있어요. 내 정보 탭에서 로그인해 주세요');return;}
+    state.savedOnly=!state.savedOnly;state.emptySim=false;
+    if(state.selected&&state.savedOnly&&!state.saved[state.selected]){state.selected=null;state.mode='list';}
+    render();return;
+  }
+  state.cat=b.dataset.cat;
+  if(state.selected&&byId[state.selected]&&state.cat!=='all'&&byId[state.selected].category_code!==state.cat){state.selected=null;state.mode='list';}
+  render();
+});
+pinsEl.addEventListener('click',function(e){
+  var pin=e.target.closest('.pin'),cl=e.target.closest('.cluster');
+  if(pin){
+    var p=byId[pin.dataset.id];state.selected=p.place_id;state.mode='card';centerOn(p.wx,p.wy,Math.max(state.s,2.4),90);render();
+  }else if(cl){
+    var xy=cl.dataset.cl.split(',');centerOn(parseFloat(xy[0]),parseFloat(xy[1]),state.s*2.2,0);render();
+  }
+});
+$('#loggedIn').addEventListener('change',function(e){state.loggedIn=e.target.checked;if(!state.loggedIn&&state.savedOnly){state.savedOnly=false;}state.scene='';buildJumps();render();});
+sheetBody.addEventListener('click',function(e){
+  var hb=e.target.closest('[data-heart]');if(hb){toggleHeart(hb.dataset.heart);return;}
+  var act=e.target.closest('[data-act]'),it=e.target.closest('.item-main');
+  if(act){
+    var a=act.dataset.act;
+    if(a==='detail'){state.detailId=state.selected;renderDetail();}
+    else if(a==='close'){state.mode='list';render();}
+    else if(a==='resetfilter'){state.cat='all';state.emptySim=false;state.savedOnly=false;render();}
+    else if(a==='reload'){state.failSim=false;toast('장소를 다시 불러왔어요',2000);render();}
+    return;
+  }
+  if(it){
+    var p=byId[it.dataset.id];state.selected=p.place_id;centerOn(p.wx,p.wy,Math.max(state.s,2.2),120);render();
+  }
+});
+detailEl.addEventListener('click',function(e){
+  var hb=e.target.closest('[data-heart]');if(hb){toggleHeart(hb.dataset.heart);return;}
+  var b=e.target.closest('[data-act="back"]');
+  if(b){state.detailId=null;render();}
+});
+noticeEl.addEventListener('click',function(e){
+  var b=e.target.closest('[data-act]');if(!b)return;
+  var a=b.dataset.act;
+  if(a==='dismiss'){state.noticeDismissed=true;showNotice();}
+  else if(a==='settings'){toast('실제 앱에서는 기기 설정 화면이 열려요');}
+  else if(a==='retry'){toast('다시 시도했지만 위치를 가져오지 못했어요');}
+});
+$('#zin').addEventListener('click',function(){state.s=clamp(state.s*1.6,MINS,MAXS);renderMap();});
+$('#zout').addEventListener('click',function(){state.s=clamp(state.s/1.6,MINS,MAXS);renderMap();});
+$('#locate').addEventListener('click',function(){
+  var u=userPos();
+  if(u){var w=toWorld(u.lat,u.lng);centerOn(w.x,w.y,Math.max(state.s,2.2),60);render();}
+  else if(state.loc==='denied'||state.loc==='failed'){state.noticeDismissed=false;showNotice();if(state.loc==='failed')toast('현재 위치를 가져오지 못했어요');}
+  else{toast('서비스 지역(사하구·부산진구) 밖이에요');}
+});
+document.querySelector('.tabbar').addEventListener('click',function(e){
+  var b=e.target.closest('[data-tab]');
+  if(b&&b.dataset.tab!=='지도')toast('시연 범위 밖이에요. 지도 탭만 동작해요.');
+});
+
+/* 지도 끌기·휠 */
+var drag=null;
+map.addEventListener('pointerdown',function(e){
+  if(e.target.closest('.pin,.cluster'))return;
+  drag={x:e.clientX,y:e.clientY,moved:false};
+  map.setPointerCapture(e.pointerId);
+});
+map.addEventListener('pointermove',function(e){
+  if(!drag)return;
+  var dx=e.clientX-drag.x,dy=e.clientY-drag.y;
+  if(!drag.moved&&Math.hypot(dx,dy)<5)return;
+  drag.moved=true;drag.x=e.clientX;drag.y=e.clientY;
+  state.cx=clamp(state.cx-dx/state.s,0,W);state.cy=clamp(state.cy-dy/state.s,0,H);
+  renderMap();
+});
+map.addEventListener('pointerup',function(){
+  if(drag&&!drag.moved&&(state.selected||state.mode==='card')){state.selected=null;state.mode='list';render();}
+  drag=null;
+});
+map.addEventListener('pointercancel',function(){drag=null;});
+map.addEventListener('wheel',function(e){
+  e.preventDefault();
+  state.s=clamp(state.s*(e.deltaY<0?1.15:1/1.15),MINS,MAXS);renderMap();
+},{passive:false});
+
+/* 시트 끌기 */
+var handle=$('#handle'),sdrag=null;
+handle.addEventListener('pointerdown',function(e){
+  if(state.mode!=='list')return;
+  sdrag={y:e.clientY,h:state.sheetH,moved:false};handle.setPointerCapture(e.pointerId);
+});
+handle.addEventListener('pointermove',function(e){
+  if(!sdrag)return;
+  var dy=sdrag.y-e.clientY;
+  if(Math.abs(dy)>4)sdrag.moved=true;
+  if(sdrag.moved){state.sheetH=clamp(sdrag.h+dy,SNAPS[0],maxSheet());applySheet();}
+});
+function endSheetDrag(){
+  if(!sdrag)return;
+  if(!sdrag.moved){state.sheetH=state.sheetH>SNAPS[0]+10?SNAPS[0]:SNAPS[1];}
+  else{
+    var best=SNAPS[0];
+    SNAPS.forEach(function(v){if(Math.abs(v-state.sheetH)<Math.abs(best-state.sheetH))best=v;});
+    state.sheetH=best;
+  }
+  sdrag=null;applySheet();
+}
+handle.addEventListener('pointerup',endSheetDrag);
+handle.addEventListener('pointercancel',function(){sdrag=null;});
+handle.addEventListener('keydown',function(e){
+  if(e.key==='Enter'||e.key===' '){e.preventDefault();state.sheetH=state.sheetH>SNAPS[0]+10?SNAPS[0]:SNAPS[1];applySheet();}
+});
+
+window.addEventListener('resize',function(){applySheet();renderMap();});
+if(window.innerWidth<761){var pd=$('#panelDetails');if(pd)pd.open=false;}
+
+buildChips();buildJumps();renderLocRadios();
+runScene('s1');
+})();
+</script>
